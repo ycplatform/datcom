@@ -276,7 +276,7 @@
   const BANK = { bankName: 'ACB', account: '33175049', holder: 'NGUYEN THI NGOC ANH' };
   let PRICE = 35000, MAX_QTY = 20;
   let busy = false, polling = false, seq = 0;
-  const REFRESH_MS = 5000;
+  const REFRESH_MS = 10000;
 
   const money = n => Number(n || 0).toLocaleString('vi-VN') + 'đ';
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g,
