@@ -133,15 +133,25 @@
     .modal .tip { font-size: 13px; color: var(--muted); }
 
     /* Khung dựng ảnh xuất (nằm ngoài màn hình) */
-    .export { position: absolute; left: -10000px; top: 0; width: 720px; background: #fff; color: #222; padding: 24px;
-      font-family: Arial, sans-serif; font-size: 15px; line-height: 1.4; }
-    .export .t { font-size: 22px; font-weight: 700; }
-    .export .s { color: #666; margin: 2px 0 12px; }
-    .export h3 { font-size: 16px; margin: 18px 0 6px; }
-    .export table { margin-top: 4px; }
-    .export th, .export td { padding: 6px; border-bottom: 1px solid #e5e5e5; }
-    .export th { color: #666; font-size: 13px; }
-    .export .bank { margin-top: 16px; padding: 10px 12px; background: #eef5fd; border-radius: 8px; }
+    .export { position: absolute; left: -10000px; top: 0; background: #fff; color: #222; padding: 24px 28px;
+      font-family: Arial, sans-serif; font-size: 15px; line-height: 1.35; }
+    .export .t { font-size: 24px; font-weight: 700; }
+    .export .s { color: #555; margin: 4px 0 14px; font-size: 15px; }
+    .export .s b { color: #e0662f; }
+    .export h3 { font-size: 16px; margin: 20px 0 6px; }
+    .export .cols { display: flex; gap: 22px; align-items: flex-start; }
+    .export .cols > table { flex: 1 1 0; min-width: 0; }
+    .export table { width: 100%; border-collapse: collapse; }
+    .export th, .export td { padding: 6px 6px; border-bottom: 1px solid #e6e6e6; text-align: left; vertical-align: top; }
+    .export th { color: #666; font-size: 13px; background: #f6f3ee; }
+    .export tr:nth-child(even) td { background: #fbfaf7; }
+    .export td.no { width: 1%; white-space: nowrap; color: #888; text-align: right; padding-right: 8px; }
+    .export td.nm { white-space: nowrap; font-weight: 600; }
+    .export td.num, .export th.num { text-align: right; white-space: nowrap; }
+    .export .dn { color: #777; font-size: 13px; }
+    .export .grand { margin-top: 14px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+      background: #fff3ea; border: 1px solid #f3c9ad; border-radius: 8px; padding: 10px 14px; font-size: 17px; font-weight: 700; }
+    .export .grand span { color: #e0662f; }
   </style>
 </head>
 <body>
@@ -276,7 +286,7 @@
   const BANK = { bankName: 'ACB', account: '33175049', holder: 'NGUYEN THI NGOC ANH' };
   let PRICE = 35000, MAX_QTY = 20;
   let busy = false, polling = false, seq = 0;
-  const REFRESH_MS = 10000;
+  const REFRESH_MS = 5000;
 
   const money = n => Number(n || 0).toLocaleString('vi-VN') + 'đ';
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g,
@@ -654,34 +664,55 @@
     });
     return h2cPromise;
   }
+  // Chia mảng thành k cột đều nhau
+  function chunk(arr, k) {
+    const size = Math.ceil(arr.length / k) || 1, out = [];
+    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+    return out;
+  }
+  function buildExport() {
+    const o = state.orders, people = state.people;
+    const totalQty = o.reduce((s, x) => s + x.qty, 0);
+    const totalMoney = o.reduce((s, x) => s + x.amount, 0);
+    // Số cột: dưới 20 phần -> 1 cột; 20–40 phần -> 2 cột; trên 40 -> 3 cột
+    const k = o.length < 20 ? 1 : o.length <= 40 ? 2 : 3;
+    const colW = k === 1 ? 720 : 600;
+    const oCols = chunk(o.map((x, i) => ({ ...x, no: i + 1 })), k);
+    const pCols = chunk(people.map((p, i) => ({ ...p, no: i + 1 })), Math.min(k, Math.max(1, Math.ceil(people.length / 6))));
+    const box = document.createElement('div');
+    box.className = 'export';
+    box.style.width = (k * colW + (k - 1) * 22 + 56) + 'px';
+    box.innerHTML = `
+      <div class="t">Danh sách đặt cơm trưa</div>
+      <div class="s">${esc(viDate(state.date))} · <b>${people.length} người</b> · <b>${totalQty} phần</b> · <b>${money(totalMoney)}</b></div>
+      <div class="cols">${oCols.map(col => `
+        <table>
+          <tr><th class="num">#</th><th>Người đặt</th><th>Món</th><th class="num">Tiền</th></tr>
+          ${col.map(x => `<tr><td class="no">${x.no}</td><td class="nm">${esc(x.name)}</td>
+            <td>${esc(x.dish)}${x.note ? `<div class="dn">${esc(x.note)}</div>` : ''}</td>
+            <td class="num">${x.qty > 1 ? x.qty + ' × ' : ''}${money(x.amount)}</td></tr>`).join('')}
+        </table>`).join('')}
+      </div>
+      <h3>Tổng tiền theo người (${people.length} người)</h3>
+      <div class="cols">${pCols.map(col => `
+        <table>
+          <tr><th class="num">#</th><th>Người đặt</th><th class="num">Số phần</th><th class="num">Thành tiền</th></tr>
+          ${col.map(p => `<tr><td class="no">${p.no}</td><td>${esc(p.name)}</td><td class="num">${p.qty}</td><td class="num">${money(p.amount)}</td></tr>`).join('')}
+        </table>`).join('')}
+      </div>
+      <div class="grand"><div>TỔNG CỘNG</div><div><span>${people.length}</span> người · <span>${totalQty}</span> phần · <span>${money(totalMoney)}</span></div></div>`;
+    return box;
+  }
   $('exportBtn').addEventListener('click', async () => {
     const btn = $('exportBtn');
     if (!state.orders.length) return alert('Chưa có ai đặt trong ngày này.');
     btn.disabled = true; const label = btn.textContent; btn.textContent = 'Đang tạo ảnh...';
     try {
       await loadH2C();
-      const o = state.orders;
-      const totalQty = o.reduce((s, x) => s + x.qty, 0);
-      const totalMoney = o.reduce((s, x) => s + x.amount, 0);
-      const box = document.createElement('div');
-      box.className = 'export';
-      box.innerHTML = `
-        <div class="t">Danh sách đặt cơm trưa</div>
-        <div class="s">${esc(viDate(state.date))} · ${totalQty} phần · ${money(totalMoney)}</div>
-        <table>
-          <tr><th>#</th><th>Người đặt</th><th>Món</th><th class="num">Tiền</th></tr>
-          ${o.map((x, i) => `<tr><td>${i + 1}</td><td>${esc(x.name)}</td>
-            <td>${esc(x.dish)}${x.note ? `<div style="color:#777;font-size:13px">${esc(x.note)}</div>` : ''}</td>
-            <td class="num">${x.qty > 1 ? x.qty + ' × ' : ''}${money(x.amount)}</td></tr>`).join('')}
-        </table>
-        <h3>Tổng tiền theo người</h3>
-        <table>
-          <tr><th>Người đặt</th><th class="num">Số phần</th><th class="num">Thành tiền</th></tr>
-          ${state.people.map(p => `<tr><td>${esc(p.name)}</td><td class="num">${p.qty}</td><td class="num">${money(p.amount)}</td></tr>`).join('')}
-          <tr><td><b>TỔNG CỘNG</b></td><td class="num"><b>${totalQty}</b></td><td class="num"><b>${money(totalMoney)}</b></td></tr>
-        </table>`;
+      const box = buildExport();
       document.body.appendChild(box);
-      const canvas = await html2canvas(box, { scale: 2, backgroundColor: '#ffffff', logging: false });
+      const scale = box.offsetWidth > 1000 ? 1.6 : 2;   // ảnh rộng thì giảm độ phân giải cho nhẹ
+      const canvas = await html2canvas(box, { scale, backgroundColor: '#ffffff', logging: false });
       box.remove();
       const url = canvas.toDataURL('image/png');
       $('exportImg').src = url;
