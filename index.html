@@ -170,7 +170,7 @@
       background: #e0662f; border-radius: 4px; padding: 1px 6px; margin: 2px 0; }
     .export td.pn.split { background: #fff6ee !important; }
     .export tr.g1 td { background: #fbfaf7; }
-    .export tr.gs td { border-top: 3px solid #cfcfcf; }
+    .export tr.gs td { border-top: 2px solid #ddd; }
     .export tr.ms td.pn, .export tr.ms td { border-top: 1px dashed #d6d6d6; }
     .export td.pno small { display: block; font-size: 10px; font-weight: 700; color: #4f6b2c; background: #e8f2d9;
       border-radius: 3px; padding: 0 3px; margin-top: 3px; letter-spacing: .3px; }
@@ -520,13 +520,13 @@
     const groups = groupOrders(list);
     const q = list.reduce((s, o) => s + o.qty, 0), m = list.reduce((s, o) => s + o.amount, 0);
     const bagsW = packBags(groups);
-    const nb = bagsW.length;
     const bagRef = {};   // tên -> các bịch của người đó
     bagsW.forEach(b => b.members.forEach(m => {
       const k = m.name.toLowerCase();
       (bagRef[k] = bagRef[k] || []).push({ no: b.no, shared: b.shared, n: b.members.length, idx: m.idx, of: m.of, qty: m.qty, items: m.items });
     }));
-    $('count').textContent = `(${groups.length} người · ${nb} bịch · ${q} phần — ${money(m)})`;
+    const nOwn = bagsW.filter(b => !b.shared).length;
+    $('count').textContent = `(${groups.length} người · ${q} phần — ${money(m)}${nOwn ? ` · ${nOwn} cột riêng` : ''})`;
     $('empty').hidden = list.length > 0;
     $('empty').textContent = filter ? 'Chưa có phần nào trong ' + bName(filter) + '.' : 'Chưa có ai đặt.';
     $('groups').innerHTML = groups.map((g, i) => {
@@ -535,8 +535,7 @@
         <div class="gh"><span class="gno">${i + 1}.</span><span class="gname">${esc(g.name)}</span>
           <span class="gsum">${g.qty} phần · ${money(g.amount)}</span></div>
         ${(bagRef[g.name.toLowerCase()] || [{ no: '?', items: g.items, of: 1 }]).map(r => `
-        <div class="bagh ${r.shared ? 'sh' : ''}">🛍 Bịch ${r.no}${r.of > 1 ? ` · cột riêng ${r.idx}/${r.of} · ${r.qty} phần`
-          : r.shared ? (r.n > 1 ? ` · chung với ${r.n - 1} người` : ' · bịch chung') : ' · riêng'}</div>
+        ${r.shared ? '' : `<div class="bagh">🛍 Cột riêng · ${r.qty} phần</div>`}
         <ul class="gitems">${r.items.map(o => {
           const canDel = myOrders[o.id] && !batchLocked(o.batch || 1);
           return `<li><span class="dt">${o.qty > 1 ? o.qty + ' × ' : ''}${esc(o.dish)}${o.note ? ` <span class="dnote">(${esc(o.note)})</span>` : ''}</span>
@@ -812,7 +811,10 @@
     const k = nItems < 20 ? 1 : nItems <= 40 ? 2 : 3;
     const target = Math.ceil(nItems / k);
     const units = [];
-    bags.forEach(b => b.members.forEach((m, mi) => units.push({ b, m, mi })));
+    let pno = 0;
+    bags.forEach(b => b.members.forEach((m, mi) => units.push({ b, m: { ...m, no: ++pno }, mi })));
+    const nOwn = bags.filter(b => !b.shared).length;
+    const ownTxt = nOwn ? ` · <b>${nOwn} cột riêng</b>` : '';
     const ucols = [[]]; let filled = 0;
     units.forEach(u => {
       const w = u.m.items.length;
@@ -840,12 +842,12 @@
     box.style.width = (cols.length * colW + (cols.length - 1) * 22 + 56) + 'px';
     box.innerHTML = `
       <div class="t">Danh sách đặt cơm trưa${title ? ' · ' + esc(title) : ''}</div>
-      <div class="s">${esc(viDate(state.date))} · <b>${groups.length} người</b> · <b>${bags.length} bịch</b> · <b>${totalQty} phần</b> · <b>${money(totalMoney)}</b></div>
+      <div class="s">${esc(viDate(state.date))} · <b>${groups.length} người</b> · <b>${totalQty} phần</b> · <b>${money(totalMoney)}</b>${ownTxt}</div>
       <div class="cols">${cols.map(col => `
         <table>
-          <tr><th class="num">Bịch</th><th>Người đặt</th><th>Món</th></tr>
-          ${col.map(sg => { const b = sg.b; return sg.members.map((m, mi) => m.items.map((x, j) => `<tr class="${b.no % 2 ? '' : 'g1'} ${mi === 0 && j === 0 ? 'gs' : j === 0 ? 'ms' : ''}">
-            ${mi === 0 && j === 0 ? `<td class="pno ${b.shared ? 'shb' : 'own'}" rowspan="${sg.rows}">${b.no}<small>${b.shared ? 'CHUNG' : 'RIÊNG'}</small>${sg.cont ? '<i>(tiếp)</i>' : ''}</td>` : ''}
+          <tr><th class="num">#</th><th>Người đặt</th><th>Món</th></tr>
+          ${col.map(sg => { const b = sg.b; return sg.members.map((m, mi) => m.items.map((x, j) => `<tr class="${m.no % 2 ? '' : 'g1'} ${j === 0 ? 'gs' : ''}">
+            ${j === 0 ? `<td class="pno ${b.shared ? '' : 'own'}" rowspan="${m.items.length}">${m.no}</td>` : ''}
             ${j === 0 ? `<td class="pn ${b.shared ? '' : 'split'}" rowspan="${m.items.length}"><b>${esc(m.name)}</b>${!b.shared
                 ? `<em>CỘT RIÊNG</em><span>${m.qty} phần · ${money(m.gAmount)}</span>`
                 : `<span>${m.qty} phần · ${money(m.gAmount)}</span>`}</td>` : ''}
@@ -853,7 +855,7 @@
           </tr>`).join('')).join(''); }).join('')}
         </table>`).join('')}
       </div>
-      <div class="grand"><div>TỔNG CỘNG${filter ? ' ' + esc(bName(filter).toUpperCase()) : ''}</div><div><span>${groups.length}</span> người · <span>${bags.length}</span> bịch · <span>${totalQty}</span> phần · <span>${money(totalMoney)}</span></div></div>`;
+      <div class="grand"><div>TỔNG CỘNG${filter ? ' ' + esc(bName(filter).toUpperCase()) : ''}</div><div><span>${groups.length}</span> người · <span>${totalQty}</span> phần · <span>${money(totalMoney)}</span>${nOwn ? ` · <span>${nOwn}</span> cột riêng` : ''}</div></div>`;
     return box;
   }
   $('exportBtn').addEventListener('click', async () => {
