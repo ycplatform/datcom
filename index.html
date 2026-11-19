@@ -103,6 +103,26 @@
     .empty { color: var(--muted); text-align: center; padding: 18px 0 6px; }
     tr.grand td { font-weight: 700; border-top: 2px solid var(--ink); border-bottom: none; color: var(--accent); }
     tr.grand td:first-child { color: var(--ink); }
+    /* Danh sách gom theo người + tab đợt */
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 2px; }
+    .tab { font-size: 13px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: #fff; }
+    .tab.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .tab small { opacity: .85; }
+    .grp { border-bottom: 1px solid var(--line); padding: 10px 6px; }
+    .grp.mine { background: var(--mine); }
+    .gh { display: flex; align-items: baseline; gap: 8px; }
+    .gno { color: var(--muted); font-size: 13px; min-width: 22px; text-align: right; }
+    .gname { font-weight: 700; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    .gsum { color: var(--accent); font-weight: 600; white-space: nowrap; font-size: 14px; }
+    .gitems { list-style: none; margin: 4px 0 0; padding: 0 0 0 30px; }
+    .gitems li { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; }
+    .gitems li::before { content: '•'; color: var(--muted); }
+    .gitems .dt { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    .gitems .meta { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .bagh { margin: 6px 0 0 30px; font-size: 12.5px; font-weight: 700; color: #b4530f; background: #fff1e4;
+      border-left: 3px solid var(--accent); padding: 2px 8px; border-radius: 4px; width: fit-content; }
+    .bdg { font-size: 11px; padding: 1px 6px; border-radius: 6px; background: #f1ece4; color: #6b5a44; white-space: nowrap; }
+    .batch-info { font-size: 13.5px; color: #6b5a44; background: var(--soft); border: 1px dashed #f0cf9c; padding: 8px 10px; border-radius: 10px; }
     #summary { list-style: none; margin: 0; padding: 0; }
     #summary li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px dashed var(--line); }
     #summary li b { color: var(--accent); flex: none; }
@@ -112,14 +132,7 @@
       .wrap { padding: 12px; }
       h1 { font-size: 20px; }
       .card { padding: 14px; }
-      .orders thead { display: none; }
-      .orders tr { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 10px; padding: 10px 6px; border-bottom: 1px solid var(--line); }
-      .orders td { border: none; padding: 0; }
-      .orders td.time { grid-column: 1; grid-row: 1; }
-      .orders td.name { grid-column: 2; grid-row: 1; font-weight: 600; }
-      .orders td.amt { grid-column: 3; grid-row: 1; }
-      .orders td.dish { grid-column: 1 / 3; grid-row: 2; }
-      .orders td.act { grid-column: 3; grid-row: 2; text-align: right; }
+      .gitems { padding-left: 0; }
     }
 
     /* Hộp xem ảnh xuất */
@@ -144,11 +157,20 @@
     .export table { width: 100%; border-collapse: collapse; }
     .export th, .export td { padding: 6px 6px; border-bottom: 1px solid #e6e6e6; text-align: left; vertical-align: top; }
     .export th { color: #666; font-size: 13px; background: #f6f3ee; }
-    .export tr:nth-child(even) td { background: #fbfaf7; }
     .export td.no { width: 1%; white-space: nowrap; color: #888; text-align: right; padding-right: 8px; }
     .export td.nm { white-space: nowrap; font-weight: 600; }
     .export td.num, .export th.num { text-align: right; white-space: nowrap; }
     .export .dn { color: #777; font-size: 13px; }
+    .export td.pno { width: 1%; white-space: nowrap; font-weight: 700; color: #e0662f; text-align: right; padding-right: 8px; }
+    .export td.pn { width: 1%; white-space: nowrap; border-right: 1px solid #eee; }
+    .export td.pn b { display: block; font-size: 15px; }
+    .export td.pn span { color: #777; font-size: 13px; display: block; }
+    .export td.pn em { display: inline-block; font-style: normal; font-size: 12px; font-weight: 700; color: #fff;
+      background: #e0662f; border-radius: 4px; padding: 1px 6px; margin: 2px 0; }
+    .export td.pn.split { background: #fff6ee !important; }
+    .export tr.g1 td { background: #fbfaf7; }
+    .export tr.gs td { border-top: 2px solid #ddd; }
+    .export .bx { font-size: 11px; color: #8a6d3b; background: #f6efe2; border-radius: 4px; padding: 0 4px; margin-left: 4px; }
     .export .grand { margin-top: 14px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
       background: #fff3ea; border: 1px solid #f3c9ad; border-radius: 8px; padding: 10px 14px; font-size: 17px; font-weight: 700; }
     .export .grand span { color: #e0662f; }
@@ -203,6 +225,7 @@
             <button type="button" id="addItem">+ Thêm phần</button>
             <span class="price"><span id="qtyText">1 phần</span> × <span id="unit">35.000đ</span> = <b id="lineTotal">35.000đ</b></span>
           </div>
+          <div class="batch-info" id="batchInfo" hidden></div>
           <button type="submit" class="primary" id="submitBtn">Đặt cơm</button>
         </form>
         <div id="closed" class="closed" hidden></div>
@@ -235,15 +258,13 @@
           </div>
         </div>
         <div class="stamp" id="stamp"></div>
-        <table class="orders">
-          <thead><tr><th>Giờ</th><th>Người đặt</th><th>Món</th><th class="num">Tiền</th><th></th></tr></thead>
-          <tbody id="rows"></tbody>
-        </table>
+        <div class="tabs" id="tabs"></div>
+        <div id="groups"></div>
         <div class="empty" id="empty" hidden>Chưa có ai đặt.</div>
       </section>
 
       <section class="card">
-        <h2>Tổng tiền theo người</h2>
+        <h2>Tổng tiền theo người <span class="count">(cả ngày)</span></h2>
         <table>
           <thead><tr><th>Người đặt</th><th class="num">Số phần</th><th class="num">Thành tiền</th></tr></thead>
           <tbody id="people"></tbody>
@@ -252,7 +273,7 @@
       </section>
 
       <section class="card">
-        <h2>Tổng hợp theo món <span class="count">(số phần)</span></h2>
+        <h2>Tổng hợp theo món <span class="count" id="sumLabel">(số phần)</span></h2>
         <ul id="summary"></ul>
       </section>
     </div>
@@ -282,9 +303,11 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   };
   let myOrders = store.get('myOrders') || {};      // id -> token (để hủy phần của mình)
-  let state = { date: '', today: '', canOrder: false, ver: '', orders: [], people: [] };
+  let state = { date: '', today: '', now: '', canOrder: false, ver: '', orders: [], people: [],
+    batches: [{ name: 'Đợt 1', until: '10:15' }, { name: 'Đợt 2', until: '10:30' }] };
+  let filter = 0;   // 0 = cả ngày, 1 = Đợt 1, 2 = Đợt 2, ...
   const BANK = { bankName: 'ACB', account: '33175049', holder: 'NGUYEN THI NGOC ANH' };
-  let PRICE = 35000, MAX_QTY = 20;
+  let PRICE = 35000, MAX_QTY = 20, BAG_MAX = 4;
   let busy = false, polling = false, seq = 0;
   const REFRESH_MS = 5000;
 
@@ -379,7 +402,7 @@
     req('poll', state.date, state.ver)
       .then(r => {
         if (my !== seq) return;              // đã có thao tác mới hơn
-        if (r.same) { applyStatus(r); stamp(); } else render(r);
+        if (r.same) { applyStatus(r); renderList(); stamp(); } else render(r);
       })
       .catch(() => {})
       .finally(() => { polling = false; });
@@ -387,6 +410,8 @@
 
   function applyStatus(r) {
     state.today = r.today; state.canOrder = r.canOrder;
+    if (r.now) state.now = r.now;
+    if (r.batches) state.batches = r.batches;
     $('f').hidden = !r.canOrder;
     $('closed').hidden = r.canOrder;
     $('closed').textContent = r.reason || '';
@@ -396,6 +421,7 @@
     state.date = r.date; state.ver = r.ver;
     if (r.price) PRICE = r.price;
     if (r.maxQty) MAX_QTY = r.maxQty;
+    if (r.bagMax) BAG_MAX = r.bagMax;
     applyStatus(r);
     updateLine();
     if ($('date').value !== r.date) $('date').value = r.date;
@@ -404,18 +430,6 @@
     const orders = state.orders = r.orders || [];
     const totalQty = orders.reduce((s, o) => s + o.qty, 0);
     const totalMoney = orders.reduce((s, o) => s + o.amount, 0);
-    $('count').textContent = `(${totalQty} phần — ${money(totalMoney)})`;
-    $('empty').hidden = orders.length > 0;
-    $('rows').innerHTML = orders.map(o => {
-      const mine = !!myOrders[o.id];
-      return `<tr class="${mine ? 'mine' : ''}">
-        <td class="time">${esc(o.time)}</td>
-        <td class="name">${esc(o.name)}</td>
-        <td class="dish">${esc(o.dish)}${o.note ? `<div class="dnote">${esc(o.note)}</div>` : ''}</td>
-        <td class="num amt">${o.qty > 1 ? o.qty + ' × ' : ''}${money(o.amount)}</td>
-        <td class="act">${mine && r.canOrder ? `<button class="del" data-id="${esc(o.id)}">Hủy</button>` : ''}</td>
-      </tr>`;
-    }).join('');
 
     // Tổng tiền theo người
     const pmap = {};
@@ -431,22 +445,118 @@
     $('totalQty').textContent = totalQty;
     $('totalMoney').textContent = money(totalMoney);
 
-    // Tổng hợp theo món
-    const map = {};
-    orders.forEach(o => {
-      const k = o.dish.trim().toLowerCase();
-      (map[k] = map[k] || { dish: o.dish.trim(), n: 0 }).n += o.qty;
-    });
-    const sum = state.dishes = Object.values(map).sort((a, b) => b.n - a.n);
-    $('summary').innerHTML = sum.length
-      ? sum.map(s => `<li><span>${esc(s.dish)}</span><b>${s.n}</b></li>`).join('')
-      : '<li class="empty" style="justify-content:center">—</li>';
-    $('dishes').innerHTML = sum.map(s => `<option value="${esc(s.dish)}">`).join('');
+    renderList();
 
     renderPay();
     renderMenu(r);
     stamp();
   }
+
+  // ===== Đợt chốt đơn =====
+  const bName = b => b <= state.batches.length ? state.batches[b - 1].name : 'Sau ' + state.batches[state.batches.length - 1].until;
+  const bShort = b => b <= state.batches.length ? 'Đ' + b : 'Trễ';
+  function batchLocked(b) {
+    if (state.date < state.today) return true;
+    if (state.date > state.today) return false;
+    const x = state.batches[b - 1];
+    return !x || (!!state.now && state.now >= x.until);
+  }
+  function currentBatch() {
+    if (state.date > state.today) return 1;
+    for (let i = 0; i < state.batches.length; i++) if (!state.now || state.now < state.batches[i].until) return i + 1;
+    return state.batches.length + 1;
+  }
+  // Gom các phần theo người (giữ thứ tự người đặt đầu tiên)
+  function groupOrders(list) {
+    const map = new Map();
+    list.forEach(o => {
+      const k = o.name.trim().toLowerCase();
+      if (!map.has(k)) map.set(k, { name: o.name.trim(), items: [], qty: 0, amount: 0 });
+      const g = map.get(k); g.items.push(o); g.qty += o.qty; g.amount += o.amount;
+    });
+    return [...map.values()];
+  }
+  // Tách các phần của 1 người thành các bịch, mỗi bịch tối đa BAG_MAX phần
+  function splitBags(items) {
+    const bags = [[]]; let n = 0;
+    items.forEach(o => {
+      if (n + o.qty > BAG_MAX && bags[bags.length - 1].length) { bags.push([]); n = 0; }
+      bags[bags.length - 1].push(o); n += o.qty;
+    });
+    return bags;
+  }
+  function filtered() { return filter ? state.orders.filter(o => (o.batch || 1) === filter) : state.orders; }
+
+  function renderList() {
+    const all = state.orders;
+    const maxB = Math.max(state.batches.length, ...all.map(o => o.batch || 1));
+    if (filter > maxB) filter = 0;
+    // Tab đợt
+    const cnt = b => all.filter(o => (o.batch || 1) === b).reduce((s, o) => s + o.qty, 0);
+    let tabs = `<button class="tab ${filter === 0 ? 'on' : ''}" data-f="0">Cả ngày <small>(${all.reduce((s, o) => s + o.qty, 0)})</small></button>`;
+    for (let b = 1; b <= maxB; b++) {
+      if (b > state.batches.length && !cnt(b)) continue;
+      const until = state.batches[b - 1] ? ' · chốt ' + state.batches[b - 1].until : '';
+      const st = batchLocked(b) ? ' ✓' : '';
+      tabs += `<button class="tab ${filter === b ? 'on' : ''}" data-f="${b}">${esc(bName(b))}${until}${st} <small>(${cnt(b)})</small></button>`;
+    }
+    $('tabs').innerHTML = tabs;
+
+    // Danh sách gom theo người
+    const list = filtered();
+    const groups = groupOrders(list);
+    const q = list.reduce((s, o) => s + o.qty, 0), m = list.reduce((s, o) => s + o.amount, 0);
+    const nb = groups.reduce((s, g) => s + splitBags(g.items).length, 0);
+    $('count').textContent = `(${groups.length} người · ${nb} bịch · ${q} phần — ${money(m)})`;
+    $('empty').hidden = list.length > 0;
+    $('empty').textContent = filter ? 'Chưa có phần nào trong ' + bName(filter) + '.' : 'Chưa có ai đặt.';
+    $('groups').innerHTML = groups.map((g, i) => {
+      const mineG = g.items.some(o => myOrders[o.id]);
+      return `<div class="grp ${mineG ? 'mine' : ''}">
+        <div class="gh"><span class="gno">${i + 1}.</span><span class="gname">${esc(g.name)}</span>
+          <span class="gsum">${g.qty} phần · ${money(g.amount)}</span></div>
+        ${splitBags(g.items).map((bag, bi, arr) => `
+        ${arr.length > 1 ? `<div class="bagh">🛍 Bịch ${bi + 1}/${arr.length} · ${bag.reduce((s, o) => s + o.qty, 0)} phần</div>` : ''}
+        <ul class="gitems">${bag.map(o => {
+          const canDel = myOrders[o.id] && !batchLocked(o.batch || 1);
+          return `<li><span class="dt">${o.qty > 1 ? o.qty + ' × ' : ''}${esc(o.dish)}${o.note ? ` <span class="dnote">(${esc(o.note)})</span>` : ''}</span>
+            <span class="meta">${filter === 0 ? `<span class="bdg">${bShort(o.batch || 1)}</span> ` : ''}${esc(o.time)}</span>
+            ${canDel ? `<button class="del" data-id="${esc(o.id)}">Hủy</button>` : ''}</li>`;
+        }).join('')}</ul>`).join('')}
+      </div>`;
+    }).join('');
+
+    // Tổng hợp theo món (theo tab đang chọn)
+    const map = {};
+    list.forEach(o => {
+      const k = o.dish.trim().toLowerCase();
+      (map[k] = map[k] || { dish: o.dish.trim(), n: 0 }).n += o.qty;
+    });
+    const sum = state.dishes = Object.values(map).sort((a, b) => b.n - a.n);
+    $('sumLabel').textContent = '(số phần' + (filter ? ' · ' + bName(filter) : '') + ')';
+    $('summary').innerHTML = sum.length
+      ? sum.map(s => `<li><span>${esc(s.dish)}</span><b>${s.n}</b></li>`).join('')
+      : '<li class="empty" style="justify-content:center">—</li>';
+    const allDish = {};
+    all.forEach(o => { allDish[o.dish.trim().toLowerCase()] = o.dish.trim(); });
+    $('dishes').innerHTML = Object.values(allDish).map(d => `<option value="${esc(d)}">`).join('');
+
+    // Đơn đặt bây giờ thuộc đợt nào
+    const cb = currentBatch();
+    $('batchInfo').hidden = !state.canOrder;
+    $('batchInfo').innerHTML = state.date > state.today
+      ? `Đặt trước cho ngày này → vào <b>${esc(bName(1))}</b>.`
+      : cb <= state.batches.length
+        ? `Phần bạn đặt bây giờ sẽ vào <b>${esc(bName(cb))}</b> (chốt lúc ${state.batches[cb - 1].until}).`
+        : `Đã qua giờ chốt các đợt — phần đặt thêm sẽ ghi là <b>${esc(bName(cb))}</b>.`;
+  }
+  $('tabs').addEventListener('click', e => {
+    const b = e.target.closest('.tab'); if (!b) return;
+    filter = Number(b.dataset.f) || 0;
+    try { sessionStorage.setItem('filter', filter); } catch (e) {}
+    renderList();
+  });
+  try { filter = Number(sessionStorage.getItem('filter')) || 0; } catch (e) {}
 
   // ===== Thực đơn theo ngày =====
   const menuMem = {};          // ngày|ver -> ảnh (trong phiên)
@@ -636,7 +746,7 @@
   });
 
   // ===== Hủy phần của mình =====
-  $('rows').addEventListener('click', e => {
+  $('groups').addEventListener('click', e => {
     const b = e.target.closest('.del');
     if (!b || busy) return;
     const id = b.dataset.id;
@@ -671,41 +781,57 @@
     return out;
   }
   function buildExport() {
-    const o = state.orders, people = state.people;
-    const totalQty = o.reduce((s, x) => s + x.qty, 0);
-    const totalMoney = o.reduce((s, x) => s + x.amount, 0);
-    // Số cột: dưới 20 phần -> 1 cột; 20–40 phần -> 2 cột; trên 40 -> 3 cột
-    const k = o.length < 20 ? 1 : o.length <= 40 ? 2 : 3;
-    const colW = k === 1 ? 720 : 600;
-    const oCols = chunk(o.map((x, i) => ({ ...x, no: i + 1 })), k);
-    const pCols = chunk(people.map((p, i) => ({ ...p, no: i + 1 })), Math.min(k, Math.max(1, Math.ceil(people.length / 6))));
+    const list = filtered();
+    const groups = groupOrders(list);
+    const totalQty = list.reduce((s, x) => s + x.qty, 0);
+    const totalMoney = list.reduce((s, x) => s + x.amount, 0);
+    const nItems = list.length;
+    // Mỗi bịch là 1 khối; người trên BAG_MAX phần được tách thành nhiều bịch
+    const bags = [];
+    groups.forEach(g => {
+      const parts = splitBags(g.items);
+      parts.forEach((items, bi) => bags.push({ name: g.name, items, qty: items.reduce((s, o) => s + o.qty, 0),
+        idx: bi + 1, of: parts.length, gQty: g.qty, gAmount: g.amount }));
+    });
+    // Số cột: dưới 20 phần -> 1 cột; 20–40 phần -> 2 cột; trên 40 -> 3 cột. Không tách 1 người ra 2 cột.
+    const k = nItems < 20 ? 1 : nItems <= 40 ? 2 : 3;
+    const target = Math.ceil(nItems / k);
+    const cols = [[]]; let filled = 0;
+    bags.forEach((g, i) => {
+      const cur = cols[cols.length - 1];
+      if (cur.length && filled + g.items.length / 2 > target && cols.length < k) { cols.push([]); filled = 0; }
+      cols[cols.length - 1].push({ ...g, no: i + 1 });
+      filled += g.items.length;
+    });
+    const colW = k === 1 ? 760 : 640;
+    const showB = filter === 0 && list.some(o => (o.batch || 1) !== 1);
+    const title = filter
+      ? `${bName(filter)}${state.batches[filter - 1] ? ' — chốt ' + state.batches[filter - 1].until : ''}`
+      : (showB ? 'Cả ngày (tất cả các đợt)' : '');
     const box = document.createElement('div');
     box.className = 'export';
-    box.style.width = (k * colW + (k - 1) * 22 + 56) + 'px';
+    box.style.width = (cols.length * colW + (cols.length - 1) * 22 + 56) + 'px';
     box.innerHTML = `
-      <div class="t">Danh sách đặt cơm trưa</div>
-      <div class="s">${esc(viDate(state.date))} · <b>${people.length} người</b> · <b>${totalQty} phần</b> · <b>${money(totalMoney)}</b></div>
-      <div class="cols">${oCols.map(col => `
+      <div class="t">Danh sách đặt cơm trưa${title ? ' · ' + esc(title) : ''}</div>
+      <div class="s">${esc(viDate(state.date))} · <b>${groups.length} người</b> · <b>${bags.length} bịch</b> · <b>${totalQty} phần</b> · <b>${money(totalMoney)}</b></div>
+      <div class="cols">${cols.map(col => `
         <table>
-          <tr><th class="num">#</th><th>Người đặt</th><th>Món</th><th class="num">Tiền</th></tr>
-          ${col.map(x => `<tr><td class="no">${x.no}</td><td class="nm">${esc(x.name)}</td>
-            <td>${esc(x.dish)}${x.note ? `<div class="dn">${esc(x.note)}</div>` : ''}</td>
-            <td class="num">${x.qty > 1 ? x.qty + ' × ' : ''}${money(x.amount)}</td></tr>`).join('')}
+          <tr><th class="num">Bịch</th><th>Người đặt</th><th>Món</th></tr>
+          ${col.map(g => g.items.map((x, j) => `<tr class="${g.no % 2 ? '' : 'g1'} ${j === 0 ? 'gs' : ''}">
+            ${j === 0 ? `<td class="pno" rowspan="${g.items.length}">${g.no}</td>
+              <td class="pn ${g.of > 1 ? 'split' : ''}" rowspan="${g.items.length}"><b>${esc(g.name)}</b>${g.of > 1
+                ? `<em>CỘT RIÊNG · Bịch ${g.idx}/${g.of}</em><span>${g.qty} phần${g.idx === 1 ? ` (tổng ${g.gQty} phần · ${money(g.gAmount)})` : ''}</span>`
+                : `<span>${g.qty} phần · ${money(g.gAmount)}</span>`}</td>` : ''}
+            <td>${x.qty > 1 ? x.qty + ' × ' : ''}${esc(x.dish)}${showB ? `<span class="bx">${bShort(x.batch || 1)}</span>` : ''}${x.note ? `<div class="dn">${esc(x.note)}</div>` : ''}</td>
+          </tr>`).join('')).join('')}
         </table>`).join('')}
       </div>
-      <h3>Tổng tiền theo người (${people.length} người)</h3>
-      <div class="cols">${pCols.map(col => `
-        <table>
-          <tr><th class="num">#</th><th>Người đặt</th><th class="num">Số phần</th><th class="num">Thành tiền</th></tr>
-          ${col.map(p => `<tr><td class="no">${p.no}</td><td>${esc(p.name)}</td><td class="num">${p.qty}</td><td class="num">${money(p.amount)}</td></tr>`).join('')}
-        </table>`).join('')}
-      </div>
-      <div class="grand"><div>TỔNG CỘNG</div><div><span>${people.length}</span> người · <span>${totalQty}</span> phần · <span>${money(totalMoney)}</span></div></div>`;
+      <div class="grand"><div>TỔNG CỘNG${filter ? ' ' + esc(bName(filter).toUpperCase()) : ''}</div><div><span>${groups.length}</span> người · <span>${bags.length}</span> bịch · <span>${totalQty}</span> phần · <span>${money(totalMoney)}</span></div></div>`;
     return box;
   }
   $('exportBtn').addEventListener('click', async () => {
     const btn = $('exportBtn');
-    if (!state.orders.length) return alert('Chưa có ai đặt trong ngày này.');
+    if (!filtered().length) return alert(filter ? 'Chưa có phần nào trong ' + bName(filter) + '.' : 'Chưa có ai đặt trong ngày này.');
     btn.disabled = true; const label = btn.textContent; btn.textContent = 'Đang tạo ảnh...';
     try {
       await loadH2C();
@@ -717,7 +843,7 @@
       const url = canvas.toDataURL('image/png');
       $('exportImg').src = url;
       $('dlLink').href = url;
-      $('dlLink').download = `dat-com-${state.date}.png`;
+      $('dlLink').download = `dat-com-${state.date}${filter ? '-dot' + filter : ''}.png`;
       $('modal').hidden = false;
     } catch (e) {
       alert((e && e.message) || 'Không tạo được ảnh.');
