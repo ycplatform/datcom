@@ -119,6 +119,7 @@
     .gitems li::before { content: '•'; color: var(--muted); }
     .gitems .dt { flex: 1; min-width: 0; overflow-wrap: anywhere; }
     .gitems .meta { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .bagh.sh { color: #4f6b2c; background: #f0f6e6; border-left-color: #7aa548; }
     .bagh { margin: 6px 0 0 30px; font-size: 12.5px; font-weight: 700; color: #b4530f; background: #fff1e4;
       border-left: 3px solid var(--accent); padding: 2px 8px; border-radius: 4px; width: fit-content; }
     .bdg { font-size: 11px; padding: 1px 6px; border-radius: 6px; background: #f1ece4; color: #6b5a44; white-space: nowrap; }
@@ -169,7 +170,14 @@
       background: #e0662f; border-radius: 4px; padding: 1px 6px; margin: 2px 0; }
     .export td.pn.split { background: #fff6ee !important; }
     .export tr.g1 td { background: #fbfaf7; }
-    .export tr.gs td { border-top: 2px solid #ddd; }
+    .export tr.gs td { border-top: 3px solid #cfcfcf; }
+    .export tr.ms td.pn, .export tr.ms td { border-top: 1px dashed #d6d6d6; }
+    .export td.pno small { display: block; font-size: 10px; font-weight: 700; color: #4f6b2c; background: #e8f2d9;
+      border-radius: 3px; padding: 0 3px; margin-top: 3px; letter-spacing: .3px; }
+    .export td.pno.shb { background: #f6faef !important; }
+    .export td.pno.own { background: #fff6ee !important; }
+    .export td.pno.own small { color: #fff; background: #e0662f; }
+    .export td.pno i { display: block; font-style: normal; font-size: 10px; color: #888; font-weight: 400; }
     .export .bx { font-size: 11px; color: #8a6d3b; background: #f6efe2; border-radius: 4px; padding: 0 4px; margin-left: 4px; }
     .export .grand { margin-top: 14px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
       background: #fff3ea; border: 1px solid #f3c9ad; border-radius: 8px; padding: 10px 14px; font-size: 17px; font-weight: 700; }
@@ -476,13 +484,18 @@
     });
     return [...map.values()];
   }
-  // Tách các phần của 1 người thành các bịch, mỗi bịch tối đa BAG_MAX phần
-  function splitBags(items) {
-    const bags = [[]]; let n = 0;
-    items.forEach(o => {
-      if (n + o.qty > BAG_MAX && bags[bags.length - 1].length) { bags.push([]); n = 0; }
-      bags[bags.length - 1].push(o); n += o.qty;
+  // Xếp bịch (theo danh sách đang xem, tức theo từng đợt):
+  // - Người đặt NHIỀU HƠN BAG_MAX phần -> 1 bịch riêng cho người đó (không tách nhỏ)
+  // - Tất cả người còn lại (đặt lẻ, ≤ BAG_MAX phần) -> gom chung 1 bịch
+  function packBags(groups) {
+    const own = [], shared = { shared: true, qty: 0, members: [] };
+    groups.forEach(g => {
+      const m = { name: g.name, items: g.items, qty: g.qty, idx: 1, of: 1, gQty: g.qty, gAmount: g.amount };
+      if (g.qty > BAG_MAX) own.push({ shared: false, qty: g.qty, members: [m] });
+      else { shared.members.push(m); shared.qty += g.qty; }
     });
+    const bags = (shared.members.length ? [shared] : []).concat(own);
+    bags.forEach((b, i) => { b.no = i + 1; b.rows = b.members.reduce((s, m) => s + m.items.length, 0); });
     return bags;
   }
   function filtered() { return filter ? state.orders.filter(o => (o.batch || 1) === filter) : state.orders; }
@@ -506,7 +519,13 @@
     const list = filtered();
     const groups = groupOrders(list);
     const q = list.reduce((s, o) => s + o.qty, 0), m = list.reduce((s, o) => s + o.amount, 0);
-    const nb = groups.reduce((s, g) => s + splitBags(g.items).length, 0);
+    const bagsW = packBags(groups);
+    const nb = bagsW.length;
+    const bagRef = {};   // tên -> các bịch của người đó
+    bagsW.forEach(b => b.members.forEach(m => {
+      const k = m.name.toLowerCase();
+      (bagRef[k] = bagRef[k] || []).push({ no: b.no, shared: b.shared, n: b.members.length, idx: m.idx, of: m.of, qty: m.qty, items: m.items });
+    }));
     $('count').textContent = `(${groups.length} người · ${nb} bịch · ${q} phần — ${money(m)})`;
     $('empty').hidden = list.length > 0;
     $('empty').textContent = filter ? 'Chưa có phần nào trong ' + bName(filter) + '.' : 'Chưa có ai đặt.';
@@ -515,9 +534,10 @@
       return `<div class="grp ${mineG ? 'mine' : ''}">
         <div class="gh"><span class="gno">${i + 1}.</span><span class="gname">${esc(g.name)}</span>
           <span class="gsum">${g.qty} phần · ${money(g.amount)}</span></div>
-        ${splitBags(g.items).map((bag, bi, arr) => `
-        ${arr.length > 1 ? `<div class="bagh">🛍 Bịch ${bi + 1}/${arr.length} · ${bag.reduce((s, o) => s + o.qty, 0)} phần</div>` : ''}
-        <ul class="gitems">${bag.map(o => {
+        ${(bagRef[g.name.toLowerCase()] || [{ no: '?', items: g.items, of: 1 }]).map(r => `
+        <div class="bagh ${r.shared ? 'sh' : ''}">🛍 Bịch ${r.no}${r.of > 1 ? ` · cột riêng ${r.idx}/${r.of} · ${r.qty} phần`
+          : r.shared ? (r.n > 1 ? ` · chung với ${r.n - 1} người` : ' · bịch chung') : ' · riêng'}</div>
+        <ul class="gitems">${r.items.map(o => {
           const canDel = myOrders[o.id] && !batchLocked(o.batch || 1);
           return `<li><span class="dt">${o.qty > 1 ? o.qty + ' × ' : ''}${esc(o.dish)}${o.note ? ` <span class="dnote">(${esc(o.note)})</span>` : ''}</span>
             <span class="meta">${filter === 0 ? `<span class="bdg">${bShort(o.batch || 1)}</span> ` : ''}${esc(o.time)}</span>
@@ -786,22 +806,29 @@
     const totalQty = list.reduce((s, x) => s + x.qty, 0);
     const totalMoney = list.reduce((s, x) => s + x.amount, 0);
     const nItems = list.length;
-    // Mỗi bịch là 1 khối; người trên BAG_MAX phần được tách thành nhiều bịch
-    const bags = [];
-    groups.forEach(g => {
-      const parts = splitBags(g.items);
-      parts.forEach((items, bi) => bags.push({ name: g.name, items, qty: items.reduce((s, o) => s + o.qty, 0),
-        idx: bi + 1, of: parts.length, gQty: g.qty, gAmount: g.amount }));
-    });
+    // Xếp bịch: 1 bịch chung + các bịch riêng
+    const bags = packBags(groups);
     // Số cột: dưới 20 phần -> 1 cột; 20–40 phần -> 2 cột; trên 40 -> 3 cột. Không tách 1 người ra 2 cột.
     const k = nItems < 20 ? 1 : nItems <= 40 ? 2 : 3;
     const target = Math.ceil(nItems / k);
-    const cols = [[]]; let filled = 0;
-    bags.forEach((g, i) => {
-      const cur = cols[cols.length - 1];
-      if (cur.length && filled + g.items.length / 2 > target && cols.length < k) { cols.push([]); filled = 0; }
-      cols[cols.length - 1].push({ ...g, no: i + 1 });
-      filled += g.items.length;
+    const units = [];
+    bags.forEach(b => b.members.forEach((m, mi) => units.push({ b, m, mi })));
+    const ucols = [[]]; let filled = 0;
+    units.forEach(u => {
+      const w = u.m.items.length;
+      if (ucols[ucols.length - 1].length && filled + w / 2 > target && ucols.length < k) { ucols.push([]); filled = 0; }
+      ucols[ucols.length - 1].push(u); filled += w;
+    });
+    // Trong mỗi cột, gom các người liền nhau cùng bịch thành 1 đoạn
+    const cols = ucols.map(us => {
+      const segs = [];
+      us.forEach(u => {
+        const last = segs[segs.length - 1];
+        if (last && last.b === u.b) last.members.push(u.m);
+        else segs.push({ b: u.b, cont: u.mi > 0, members: [u.m] });
+      });
+      segs.forEach(sg => { sg.rows = sg.members.reduce((s, m) => s + m.items.length, 0); });
+      return segs;
     });
     const colW = k === 1 ? 760 : 640;
     const showB = filter === 0 && list.some(o => (o.batch || 1) !== 1);
@@ -817,13 +844,13 @@
       <div class="cols">${cols.map(col => `
         <table>
           <tr><th class="num">Bịch</th><th>Người đặt</th><th>Món</th></tr>
-          ${col.map(g => g.items.map((x, j) => `<tr class="${g.no % 2 ? '' : 'g1'} ${j === 0 ? 'gs' : ''}">
-            ${j === 0 ? `<td class="pno" rowspan="${g.items.length}">${g.no}</td>
-              <td class="pn ${g.of > 1 ? 'split' : ''}" rowspan="${g.items.length}"><b>${esc(g.name)}</b>${g.of > 1
-                ? `<em>CỘT RIÊNG · Bịch ${g.idx}/${g.of}</em><span>${g.qty} phần${g.idx === 1 ? ` (tổng ${g.gQty} phần · ${money(g.gAmount)})` : ''}</span>`
-                : `<span>${g.qty} phần · ${money(g.gAmount)}</span>`}</td>` : ''}
+          ${col.map(sg => { const b = sg.b; return sg.members.map((m, mi) => m.items.map((x, j) => `<tr class="${b.no % 2 ? '' : 'g1'} ${mi === 0 && j === 0 ? 'gs' : j === 0 ? 'ms' : ''}">
+            ${mi === 0 && j === 0 ? `<td class="pno ${b.shared ? 'shb' : 'own'}" rowspan="${sg.rows}">${b.no}<small>${b.shared ? 'CHUNG' : 'RIÊNG'}</small>${sg.cont ? '<i>(tiếp)</i>' : ''}</td>` : ''}
+            ${j === 0 ? `<td class="pn ${b.shared ? '' : 'split'}" rowspan="${m.items.length}"><b>${esc(m.name)}</b>${!b.shared
+                ? `<em>CỘT RIÊNG</em><span>${m.qty} phần · ${money(m.gAmount)}</span>`
+                : `<span>${m.qty} phần · ${money(m.gAmount)}</span>`}</td>` : ''}
             <td>${x.qty > 1 ? x.qty + ' × ' : ''}${esc(x.dish)}${showB ? `<span class="bx">${bShort(x.batch || 1)}</span>` : ''}${x.note ? `<div class="dn">${esc(x.note)}</div>` : ''}</td>
-          </tr>`).join('')).join('')}
+          </tr>`).join('')).join(''); }).join('')}
         </table>`).join('')}
       </div>
       <div class="grand"><div>TỔNG CỘNG${filter ? ' ' + esc(bName(filter).toUpperCase()) : ''}</div><div><span>${groups.length}</span> người · <span>${bags.length}</span> bịch · <span>${totalQty}</span> phần · <span>${money(totalMoney)}</span></div></div>`;
